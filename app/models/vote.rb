@@ -25,7 +25,7 @@ class Vote < ActiveRecord::Base
       #self.publication.tally_votes(related_votes)
       
       #let publication decide how to access votes
-      self.publication.tally_votes()
+      self.publication.delay.tally_votes()
     end    
     return nil
   end

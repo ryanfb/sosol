@@ -547,29 +547,30 @@ class Publication < ActiveRecord::Base
   
   def change_status(new_status)
     Rails.logger.info("change_status to #{new_status} for #{self.inspect}")
-    if (self.status != new_status) && !(self.head.nil?)
-      old_branch_name = self.branch
-      old_branch_leaf = old_branch_name.split('/').last
-      new_branch_components = [old_branch_leaf]
-      
-      unless new_status == 'editing'
-        new_branch_components.unshift(new_status, Time.now.strftime("%Y/%m/%d"))
-      end
-      
-      if self.parent && (self.parent.owner.class == Board)
-        new_branch_components.unshift(title_to_ref(self.parent.owner.title))
-      end
-      
-      new_branch_name = new_branch_components.join('/')
+    # wrap changes in locking transaction, so that if git activity raises an exception
+    # the corresponding db changes are rolled back
+    self.with_lock do
+      if (self.status != new_status) && !(self.head.nil?)
+        old_branch_name = self.branch
+        old_branch_leaf = old_branch_name.split('/').last
+        new_branch_components = [old_branch_leaf]
+        
+        unless new_status == 'editing'
+          new_branch_components.unshift(new_status, Time.now.strftime("%Y/%m/%d"))
+        end
+        
+        if self.parent && (self.parent.owner.class == Board)
+          new_branch_components.unshift(title_to_ref(self.parent.owner.title))
+        end
+        
+        new_branch_name = new_branch_components.join('/')
 
-      # prevent collisions
-      if self.owner.repository.branches.include?(new_branch_name)
-        new_branch_name += Time.now.strftime("-%H.%M.%S")
-      end
+        # prevent collisions
+        if self.owner.repository.branches.include?(new_branch_name)
+          new_branch_name += Time.now.strftime("-%H.%M.%S")
+        end
     
-      # wrap changes in transaction, so that if git activity raises an exception
-      # the corresponding db changes are rolled back
-      self.transaction do
+
         # set to new branch
         self.branch = new_branch_name
         # set status to new status
@@ -583,7 +584,7 @@ class Publication < ActiveRecord::Base
       end
     end
   end
-  
+
   #Sets the status to archived and renames the title with the date-time to prevent future title collisions.
   def archive
     self.change_status("archived")
@@ -620,93 +621,98 @@ class Publication < ActiveRecord::Base
   #*Effects*
   #- Calls methods and sets status based on vote tally. See implementation for details.
   def tally_votes(user_votes = nil)
-    user_votes ||= self.votes #use the publication's votes
-    #here is where the action is for deciding how votes are organized and what happens for vote results
-    #as of 3-11-2011 the votes are set on the identifier where the user votes & on the publication
-    #once a user has voted on any identifier of a publication, then they can no longer vote on the publication
-    #vote action is determined by votes on the publication
-    #any modified identifiers that the board controlls will have the change desc added.
-    #Future changes may be made here if the voting logic is to be separated per identifier
-    
-    #check that we are still taking votes
-    if self.status != "voting"
-      return "" #return nothing and do nothing since the voting is now over
-    end
-    
-    #need to tally votes and see if any action will take place
-    if self.owner_type != "Board" # || !self.owner #make sure board still exist...add error message?
-      return "" #another check to make sure only the board is voting on its copy
-    else
-      decree_action = self.owner.tally_votes(user_votes) #since board has decrees let them figure out the vote results
-    end
-   
+    self.transaction do
+      self.origin.lock!
+      self.origin.all_children.each{|child| child.lock!}
 
-    # create an event if anything happened
-    if !decree_action.nil? && decree_action != ''
-      e = Event.new
-      e.owner = self.owner
-      e.target = self
-      e.category = "marked as \"#{decree_action}\""
-      e.save!
-    end
-  
-  #----approve-----
-    if decree_action == "approve"
+      user_votes ||= self.votes #use the publication's votes
+      #here is where the action is for deciding how votes are organized and what happens for vote results
+      #as of 3-11-2011 the votes are set on the identifier where the user votes & on the publication
+      #once a user has voted on any identifier of a publication, then they can no longer vote on the publication
+      #vote action is determined by votes on the publication
+      #any modified identifiers that the board controlls will have the change desc added.
+      #Future changes may be made here if the voting logic is to be separated per identifier
       
-      #set status
-      self.change_status("approved")
-      self.set_origin_and_local_identifier_status("approved")
+      #check that we are still taking votes
+      if self.status != "voting"
+        return "" #return nothing and do nothing since the voting is now over
+      end
       
-      #send emails
-      self.owner.send_status_emails("approved", self)
+      #need to tally votes and see if any action will take place
+      if self.owner_type != "Board" # || !self.owner #make sure board still exist...add error message?
+        return "" #another check to make sure only the board is voting on its copy
+      else
+        decree_action = self.owner.tally_votes(user_votes) #since board has decrees let them figure out the vote results
+      end
      
-      #set up for finalizing
-      self.send_to_finalizer
-      
-      
-  #----reject-----    
-    elsif decree_action == "reject"   
-     
-      #set status
-      self.origin.change_status("editing")
-      self.set_origin_and_local_identifier_status("editing")
-      
-      #send emails
-      self.owner.send_status_emails("rejected", self)
-      
-      #do we want to copy ours back to the user? 
-      #TODO add copy to user
-      #NOTE since they decided not to let editors edit we don't need to copy back to user 1-28-2010
-      
-      self.origin.save!
-      
-      self.destroy
-      
-  #----graffiti-----      
-    elsif decree_action == "graffiti"               
-      # @publication.send_status_emails(decree_action)
-      #do destroy after email since the email may need info in the artice
-      #@publication.get_category_obj().graffiti
-      
-      self.owner.send_status_emails("graffiti", self)
-      #todo do we let one board destroy the entire document?
-      #will this destroy all board copies....
-      self.origin.destroy #need to destroy related? 
-      self.destroy
-     # redirect_to ( dashboard_url )
-      #TODO we need to walk the tree and delete everything everywhere??
-      #or
-      #self.submit_to_next_board
-      
-  #----uknown on none-----      
-    else
-      #unknown action or no action
-      #TODO allow board to return any action, and then call that action on the identifier, board or wherever it makes sense to allow the user to add to the class
-      #if publication has comunity name, then it may make sense for that name to be linked to a mixin or such that contains custom methods
-      #parse action name
-    end
+
+      # create an event if anything happened
+      if !decree_action.nil? && decree_action != ''
+        e = Event.new
+        e.owner = self.owner
+        e.target = self
+        e.category = "marked as \"#{decree_action}\""
+        e.save!
+      end
     
-    return decree_action
+    #----approve-----
+      if decree_action == "approve"
+        
+        #set status
+        self.change_status("approved")
+        self.set_origin_and_local_identifier_status("approved")
+        
+        #send emails
+        self.owner.send_status_emails("approved", self)
+       
+        #set up for finalizing
+        self.send_to_finalizer
+        
+        
+    #----reject-----    
+      elsif decree_action == "reject"   
+       
+        #set status
+        self.origin.change_status("editing")
+        self.set_origin_and_local_identifier_status("editing")
+        
+        #send emails
+        self.owner.send_status_emails("rejected", self)
+        
+        #do we want to copy ours back to the user? 
+        #TODO add copy to user
+        #NOTE since they decided not to let editors edit we don't need to copy back to user 1-28-2010
+        
+        self.origin.save!
+        
+        self.destroy
+        
+    #----graffiti-----      
+      elsif decree_action == "graffiti"               
+        # @publication.send_status_emails(decree_action)
+        #do destroy after email since the email may need info in the artice
+        #@publication.get_category_obj().graffiti
+        
+        self.owner.send_status_emails("graffiti", self)
+        #todo do we let one board destroy the entire document?
+        #will this destroy all board copies....
+        self.origin.destroy #need to destroy related? 
+        self.destroy
+       # redirect_to ( dashboard_url )
+        #TODO we need to walk the tree and delete everything everywhere??
+        #or
+        #self.submit_to_next_board
+        
+    #----uknown on none-----      
+      else
+        #unknown action or no action
+        #TODO allow board to return any action, and then call that action on the identifier, board or wherever it makes sense to allow the user to add to the class
+        #if publication has comunity name, then it may make sense for that name to be linked to a mixin or such that contains custom methods
+        #parse action name
+      end
+      
+      return decree_action
+    end
   end
   
   def flatten_commits(finalizing_publication, finalizer, board_members)
@@ -1047,113 +1053,134 @@ class Publication < ActiveRecord::Base
   
   
   def commit_to_canon
-    #commit_sha is just used to return git sha reference point for comment
-    commit_sha = nil
-  
-    canon = Repository.new
-    publication_sha = self.head
-    canonical_sha = canon.repo.get_head('master').commit.sha
+    self.with_lock do
+      #commit_sha is just used to return git sha reference point for comment
+      commit_sha = nil
     
-    # FIXME: This walks the whole rev list, should maybe use git merge-base
-    # to find the branch point? Though that may do the same internally...
-    # commits = canon.repo.commit_deltas_from(self.owner.repository.repo, 'master', self.branch)
-    
-    # Commits that are in canonical master but not this branch
-    # Forcing method_missing here to directly call rev-list is much faster
-    commits = self.owner.repository.repo.git.method_missing('rev-list',{}, canonical_sha, "^#{publication_sha}").split("\n")
-    
-    # canon.repo.git.merge({:no_commit => true, :stat => true},
-      # self.owner.repository.repo.get_head(self.branch).commit.sha)
-    
-    # get the result of merging canon master into this branch
-    # merge = Grit::Merge.new(
-    #   self.owner.repository.repo.git.merge_tree({},
-    #     publication_sha, canonical_sha, publication_sha))
-    
-    
-    if canon_controlled_identifiers.length > 0
-      if commits.length == 0
-        # nothing new from canon, trivial merge by updating HEAD 
-        # e.g. "Fast-forward" merge, HEAD is already contained in the commit
-        # canon.fetch_objects(self.owner.repository)
-        canon.add_alternates(self.owner.repository)
-        commit_sha = canon.repo.update_ref('master', publication_sha)
+      canon = Repository.new
+      publication_sha = self.head
+      canonical_sha = canon.repo.get_head('master').commit.sha
+      
+      # FIXME: This walks the whole rev list, should maybe use git merge-base
+      # to find the branch point? Though that may do the same internally...
+      # commits = canon.repo.commit_deltas_from(self.owner.repository.repo, 'master', self.branch)
+      
+      # Commits that are in canonical master but not this branch
+      # Forcing method_missing here to directly call rev-list is much faster
+      commits = self.owner.repository.repo.git.method_missing('rev-list',{}, canonical_sha, "^#{publication_sha}").split("\n")
+      
+      # canon.repo.git.merge({:no_commit => true, :stat => true},
+        # self.owner.repository.repo.get_head(self.branch).commit.sha)
+      
+      # get the result of merging canon master into this branch
+      # merge = Grit::Merge.new(
+      #   self.owner.repository.repo.git.merge_tree({},
+      #     publication_sha, canonical_sha, publication_sha))
+      
+      
+      if canon_controlled_identifiers.length > 0
+        if commits.length == 0
+          # nothing new from canon, trivial merge by updating HEAD 
+          # e.g. "Fast-forward" merge, HEAD is already contained in the commit
+          # canon.fetch_objects(self.owner.repository)
+          canon.add_alternates(self.owner.repository)
+          commit_sha = canon.repo.update_ref('master', publication_sha)
+          
+          self.change_status('committed')
+          self.save!
+        else
+          # Both the merged commit and HEAD are independent and must be tied 
+          # together by a merge commit that has both of them as its parents.
         
-        self.change_status('committed')
-        self.save!
+          # TODO: DRY from flatten_commits
+          controlled_blobs = self.canon_controlled_paths.collect do |controlled_path|
+            self.owner.repository.get_blob_from_branch(controlled_path, self.branch)
+          end
+
+          controlled_paths_blobs = 
+            Hash[*((self.canon_controlled_paths.zip(controlled_blobs)).flatten)]
+
+          Rails.logger.info("Controlled Blobs: #{controlled_blobs.inspect}")
+          Rails.logger.info("Controlled Paths => Blobs: #{controlled_paths_blobs.inspect}")
+        
+          # roll a tree SHA1 by reading the canonical master tree,
+          # adding controlled path blobs, then writing the modified tree
+          # (happens on the finalizer's repo)
+          self.owner.repository.update_master_from_canonical
+          index = self.owner.repository.repo.index
+          index.read_tree('master')
+          controlled_paths_blobs.each_pair do |path, blob|
+            index.add(path, blob.data)
+          end
+
+          tree_sha1 = index.write_tree(index.tree, index.current_tree)
+          Rails.logger.info("Wrote tree as SHA1: #{tree_sha1}")
+
+          commit_message = "Finalization merge of branch '#{self.branch}' into canonical master"
+        
+          contents = []
+          contents << ['tree', tree_sha1].join(' ')
+          contents << ['parent', canonical_sha].join(' ')
+          contents << ['parent', publication_sha].join(' ')
+
+          contents << ['author', self.owner.git_author_string].join(' ')
+          contents << ['committer', self.owner.git_author_string].join(' ')
+          contents << ''
+          contents << commit_message
+        
+          finalized_commit_sha1 = 
+            self.owner.repository.repo.git.put_raw_object(
+              contents.join("\n"), 'commit')
+        
+          Rails.logger.info("Finalized commit contents:\n#{contents.join("\n")}")
+          Rails.logger.info("Wrote finalized commit merge as SHA1: #{finalized_commit_sha1}")
+        
+          # Update our own head first
+          self.owner.repository.repo.update_ref(self.branch, finalized_commit_sha1)
+        
+          # canon.fetch_objects(self.owner.repository)
+          canon.add_alternates(self.owner.repository)
+          commit_sha = canon.repo.update_ref('master', finalized_commit_sha1)
+          
+          self.change_status('committed')
+          self.save!
+        end
+        
+        # finalized, try to repack
+        begin
+          canon.repo.git.repack({})
+        rescue Grit::Git::GitTimeout
+          Rails.logger.warn("Canonical repository not repacked after finalization!")
+        end
       else
-        # Both the merged commit and HEAD are independent and must be tied 
-        # together by a merge commit that has both of them as its parents.
-      
-        # TODO: DRY from flatten_commits
-        controlled_blobs = self.canon_controlled_paths.collect do |controlled_path|
-          self.owner.repository.get_blob_from_branch(controlled_path, self.branch)
-        end
-
-        controlled_paths_blobs = 
-          Hash[*((self.canon_controlled_paths.zip(controlled_blobs)).flatten)]
-
-        Rails.logger.info("Controlled Blobs: #{controlled_blobs.inspect}")
-        Rails.logger.info("Controlled Paths => Blobs: #{controlled_paths_blobs.inspect}")
-      
-        # roll a tree SHA1 by reading the canonical master tree,
-        # adding controlled path blobs, then writing the modified tree
-        # (happens on the finalizer's repo)
-        self.owner.repository.update_master_from_canonical
-        index = self.owner.repository.repo.index
-        index.read_tree('master')
-        controlled_paths_blobs.each_pair do |path, blob|
-          index.add(path, blob.data)
-        end
-
-        tree_sha1 = index.write_tree(index.tree, index.current_tree)
-        Rails.logger.info("Wrote tree as SHA1: #{tree_sha1}")
-
-        commit_message = "Finalization merge of branch '#{self.branch}' into canonical master"
-      
-        contents = []
-        contents << ['tree', tree_sha1].join(' ')
-        contents << ['parent', canonical_sha].join(' ')
-        contents << ['parent', publication_sha].join(' ')
-
-        contents << ['author', self.owner.git_author_string].join(' ')
-        contents << ['committer', self.owner.git_author_string].join(' ')
-        contents << ''
-        contents << commit_message
-      
-        finalized_commit_sha1 = 
-          self.owner.repository.repo.git.put_raw_object(
-            contents.join("\n"), 'commit')
-      
-        Rails.logger.info("Finalized commit contents:\n#{contents.join("\n")}")
-        Rails.logger.info("Wrote finalized commit merge as SHA1: #{finalized_commit_sha1}")
-      
-        # Update our own head first
-        self.owner.repository.repo.update_ref(self.branch, finalized_commit_sha1)
-      
-        # canon.fetch_objects(self.owner.repository)
-        canon.add_alternates(self.owner.repository)
-        commit_sha = canon.repo.update_ref('master', finalized_commit_sha1)
-        
+        # nothing under canon control, just say it's committed
         self.change_status('committed')
         self.save!
+        
       end
-      
-      # finalized, try to repack
-      begin
-        canon.repo.git.repack({})
-      rescue Grit::Git::GitTimeout
-        Rails.logger.warn("Canonical repository not repacked after finalization!")
-      end
-    else
-      # nothing under canon control, just say it's committed
-      self.change_status('committed')
-      self.save!
-      
+      return commit_sha
     end
-    return commit_sha
   end
   
+  def commit_to_canon_with_comment(comment_text, identifier_id)
+      #go ahead and store a comment on finalize even if the user makes no comment...so we have a record of the action  
+    comment = Comment.new()
+  
+    if comment_text && comment_text != ""  
+      comment.comment = comment_text
+    else
+      comment.comment = "no comment"
+    end
+    comment.user = self.owner
+    comment.reason = "finalizing"
+    comment.git_hash = self.commit_to_canon
+    #associate comment with original identifier/publication
+    comment.identifier_id = identifier_id
+    comment.publication = self.origin
+    
+    comment.save
+    return comment
+  end
   
   def branch_from_master
     owner.repository.create_branch(branch)

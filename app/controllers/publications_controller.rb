@@ -403,7 +403,7 @@ class PublicationsController < ApplicationController
       
     else #commit to canon
       begin
-        canon_sha = @publication.commit_to_canon
+        @publication.delay.commit_to_canon_with_comment(params[:comment], params[:identifier_id])
         expire_publication_cache(@publication.creator.id)
         expire_fragment(/board_publications_\d+/)
       rescue Errno::EACCES => git_permissions_error
@@ -412,24 +412,6 @@ class PublicationsController < ApplicationController
         return
       end    
     end
-
-
-    #go ahead and store a comment on finalize even if the user makes no comment...so we have a record of the action  
-    @comment = Comment.new()
-  
-    if params[:comment] && params[:comment] != ""  
-      @comment.comment = params[:comment]
-    else
-      @comment.comment = "no comment"
-    end
-    @comment.user = @current_user
-    @comment.reason = "finalizing"
-    @comment.git_hash = canon_sha
-    #associate comment with original identifier/publication
-    @comment.identifier_id = params[:identifier_id]
-    @comment.publication = @publication.origin
-    
-    @comment.save
     
     #create an event to show up on dashboard
     @event = Event.new()
