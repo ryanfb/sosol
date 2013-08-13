@@ -55,6 +55,11 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.6.3)
+    delayed_job (4.0.0)
+      activesupport (>= 3.0, < 4.1)
+    delayed_job_active_record (4.0.0)
+      activerecord (>= 3.0, < 4.1)
+      delayed_job (>= 3.0, < 4.1)
     diff-lcs (1.2.4)
     dynamic_form (1.1.4)
     erubis (2.7.0)
@@ -81,6 +86,7 @@ GEM
       thor (>= 0.14, < 2.0)
     jruby-openssl (0.8.8)
       bouncy-castle-java (>= 1.5.0147)
+    json (1.5.0)
     json (1.5.0-java)
     json-jruby (1.5.0-java)
       json (= 1.5.0)
@@ -99,6 +105,8 @@ GEM
     polyglot (0.3.3)
     prototype-rails (3.2.1)
       rails (~> 3.2)
+    puma (2.5.0)
+      rack (>= 1.1, < 2.0)
     puma (2.5.0-java)
       rack (>= 1.1, < 2.0)
     rack (1.4.5)
@@ -163,6 +171,7 @@ DEPENDENCIES
   airbrake (>= 3.0.5)
   capistrano
   coffee-rails (~> 3.2.1)
+  delayed_job_active_record
   dynamic_form
   factory_girl (>= 2.6.4)
   factory_girl_rails (>= 1.2)
