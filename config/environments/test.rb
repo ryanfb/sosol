@@ -42,4 +42,6 @@ Sosol::Application.configure do
   # RPX_API_KEY and RPX_REALM (site name) for RPX,
   # and possibly other unversioned secrets for development
   require File.join(File.dirname(__FILE__), 'test_secret')
+
+  Delayed::Worker.delay_jobs = false
 end
