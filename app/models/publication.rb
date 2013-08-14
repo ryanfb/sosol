@@ -899,7 +899,8 @@ class Publication < ActiveRecord::Base
       return false
     end
   
-    self.transaction do
+    self.with_lock do
+      old_finalizing_publication.lock!
       # clone publication database record to owner
       new_finalizing_publication = old_finalizing_publication.dup
       new_finalizing_publication.owner = new_finalizer
@@ -920,10 +921,9 @@ class Publication < ActiveRecord::Base
       new_finalizing_publication.owner.repository.copy_branch_from_repo( old_finalizing_publication.branch, new_finalizing_publication.branch, old_finalizing_publication.owner.repository)
       new_finalizing_publication.save!
 
+      # destroy old publication (including branch)
+      old_finalizing_publication.destroy
     end
-    
-    # destroy old publication (including branch)
-    old_finalizing_publication.destroy
     
     return true
   end
