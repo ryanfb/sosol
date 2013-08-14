@@ -209,7 +209,9 @@ end
        #now meta should have it
        assert_equal "submitted", @publication.status, "Publication status not submitted " + @publication.community_id.to_s + " id "
 
-       Rails.logger.debug "---Publication Submitted to Community: " + @publication.community.name
+       Rails.logger.debug "---After submit: " + @publication.inspect
+       Rails.logger.debug "---After submit children: " + @publication.all_children.inspect
+       Rails.logger.debug "---Publication Submitted to Community: " + @publication.all_children.first.community.name
       
        #meta board should have 1 publication, others should have 0
        meta_publications = Publication.find(:all, :conditions => { :owner_id => @meta_board.id, :owner_type => "Board" } )

@@ -230,16 +230,19 @@ class PublicationsController < ApplicationController
       community_id.strip
       if !community_id.empty? && community_id != "0" && !community_id.nil?
         @publication.community_id = community_id
+        @publication.save
         Rails.logger.info "Publication " + @publication.id.to_s + " " + @publication.title + " will be submitted to " + @publication.community.format_name
       else
         #force community id to nil for sosol
-        @publication.community_id = nil;        
+        @publication.community_id = nil
+        @publication.save
         Rails.logger.info "Publication " + @publication.id.to_s + " " + @publication.title + " will be submitted to SoSOL"
       end
       
     else
       #force community id to 0 for sosol
-      @publication.community_id = nil;
+      @publication.community_id = nil
+      @publication.save
     end
     
     
