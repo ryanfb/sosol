@@ -855,33 +855,37 @@ class Publication < ActiveRecord::Base
   #- +finalizer+ user who will become the finalizer. If no finalizer given, a board member will be randomly choosen.
   #
   def send_to_finalizer(finalizer = nil)
-    board_members = self.owner.users   
-    if !finalizer
-      #get someone from the board    
-#      board_members = self.owner.users    
-      # just select a random board member to be the finalizer
-      finalizer = board_members[rand(board_members.length)]  
-    end
+    self.with_lock do
+      board_members = self.owner.users
+      if !finalizer
+        #get someone from the board    
+  #      board_members = self.owner.users    
+        # just select a random board member to be the finalizer
+        finalizer = board_members[rand(board_members.length)]  
+      end
+        
+      # finalizing_publication = copy_to_owner(finalizer)
+      finalizing_publication = clone_to_owner(finalizer)
+      self.flatten_commits(finalizing_publication, finalizer, board_members)
       
-    # finalizing_publication = copy_to_owner(finalizer)
-    finalizing_publication = clone_to_owner(finalizer)
-    self.flatten_commits(finalizing_publication, finalizer, board_members)
-    
-    #should we clear the modified flag so we can tell if the finalizer has done anything
-    # that way we will know in the future if we can change finalizersedidd
-    finalizing_publication.change_status('finalizing')
-    finalizing_publication.save!
+      #should we clear the modified flag so we can tell if the finalizer has done anything
+      # that way we will know in the future if we can change finalizersedidd
+      finalizing_publication.change_status('finalizing')
+      finalizing_publication.save!
+    end
   end  
   
   #Destroys this publication's finalizer's copy.
   def remove_finalizer
-    # need to find out if there is a finalizer, and take the publication from them
-    # finalizer will point back to this board's publication
-    current_finalizer_publication = find_finalizer_publication
+    self.with_lock do
+        # need to find out if there is a finalizer, and take the publication from them
+      # finalizer will point back to this board's publication
+      current_finalizer_publication = find_finalizer_publication
 
-    # TODO cascading comment deletes?
-    if current_finalizer_publication
-      current_finalizer_publication.destroy
+      # TODO cascading comment deletes?
+      if current_finalizer_publication
+        current_finalizer_publication.destroy
+      end
     end
   end
  
