@@ -292,18 +292,17 @@ class PublicationsController < ApplicationController
   def become_finalizer
     # TODO make sure we don't steal it from someone who is working on it
     @publication = Publication.find(params[:id].to_s)
-    @publication.remove_finalizer
+    @publication.delay.remove_finalizer
 
     #note this can only be called on a board owned publication
     if @publication.owner_type != "Board"
       flash[:error] = "Can't change finalizer on non-board copy of publication."
-      redirect_to show
+      redirect_to show and return
     end
-    @publication.send_to_finalizer(@current_user)
+    @publication.delay.send_to_finalizer(@current_user)
       
     #redirect_to (dashboard_url) #:controller => "publications", :action => "finalize_review" , :id => new_publication_id
     redirect_to :controller => 'user', :action => 'dashboard', :board_id => @publication.owner.id
-  
   end
   
   def finalize_review
