@@ -86,6 +86,14 @@ class Identifier < ActiveRecord::Base
     return self.repository.get_file_from_branch(
       self.to_path, self.branch)
   end
+
+  def blob_id
+    last_commit_id = self.repository.jgit_repo.resolve(self.branch)
+    jgit_tree = org.eclipse.jgit.revwalk.RevWalk.new(self.repository.jgit_repo).parseCommit(last_commit_id).getTree()
+
+    tree_walk = org.eclipse.jgit.treewalk.TreeWalk.forPath(self.repository.jgit_repo, self.to_path, jgit_tree)
+    tree_walk.getObjectId(0).name()
+  end
   
   # Validation of indentifier XML file against tei-epidoc.rng file
   # - *Args*  :

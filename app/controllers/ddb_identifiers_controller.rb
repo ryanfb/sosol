@@ -24,7 +24,9 @@ class DdbIdentifiersController < IdentifiersController
       if fragment_exist?(:action => 'edit', :part => "leiden_plus_#{@identifier.id}")
         @identifier[:leiden_plus] = read_fragment(:action => 'edit', :part => "leiden_plus_#{@identifier.id}")
       else
-        if(defined?(Sosol::Application.config.xsugar_standalone_enabled) && Sosol::Application.config.xsugar_standalone_enabled)
+        if(Sosol::Application.config.respond_to?(:xsugar_gitxml2nonxml_url) && !@identifier.modified)
+          @identifier[:leiden_plus] = @identifier.blob_id
+        elsif(Sosol::Application.config.respond_to?(:xsugar_standalone_enabled) && Sosol::Application.config.xsugar_standalone_enabled)
           original_xml = DDBIdentifier.preprocess(@identifier.xml_content)
 
           # strip xml:id from lb's

@@ -122,8 +122,61 @@
       return content_error_here.join("");
   }
   
+  function ajax_gitxml2nonxml(was_disabled) {
+    new Ajax.Request("#{Sosol::Application.config.xsugar_gitxml2nonxml_url}" + $F('ddb_identifier_leiden_plus'), {
+      method: 'get',
+      onSuccess: function(response) {
+        json = response.responseText.evalJSON();
+        $('ddb_identifier_leiden_plus').toggleClassName('loading');
+        
+        if ("exception" in json) {
+          insert_flash_error('Error converting XML to Leiden+ approximately at line ' + json.exception.line + ' column ' + json.exception.column + '. Please correct the error <a href="' + '#{polymorphic_path([@identifier.publication, @identifier], :action => :editxml)}' + '">on the XML page</a>.');
+                    
+          var error_content = ' ';
+          error_content = insert_error_here(json.content, json.exception.line, json.exception.column)
+          Form.Element.setValue('ddb_identifier_leiden_plus',error_content);
+          Form.Element.enable('ddb_identifier_leiden_plus');
+          //showMatch function in confirm.js included at the bottom
+          showMatch("ddb_identifier_leiden_plus", "**POSSIBLE ERROR**");
+          // **POSSIBLE ERROR** defined in insert_error_here function below
+        }
+        else {
+          //remove exisiting flash error if it is there when successfully completed
+          if ($('flasherror')) 
+            {
+              $('flasherror').remove();
+            }
+          Form.Element.setValue('ddb_identifier_leiden_plus',json.content);
+          if (!was_disabled) {
+            Form.Element.enable('ddb_identifier_leiden_plus');
+            Form.Element.enable('identifier_submit_top');
+            Form.Element.enable('identifier_submit');
+            Form.Element.focus('ddb_identifier_leiden_plus');
+          }
+        }
+      },
+      onFailure: function(response) {
+        console.log("gitxml2nonxml failure");
+        console.log(response);
+      }
+    });
+  }
+
   document.observe("dom:loaded", function() {
-    if (#{(!defined?(Sosol::Application.config.xsugar_standalone_enabled).nil?) && Sosol::Application.config.xsugar_standalone_enabled} && !#{defined?(@bad_leiden) ? @bad_leiden : false}) {
+    if (#{Sosol::Application.config.respond_to?(:xsugar_gitxml2nonxml_url) && !@identifier.modified}) {
+      was_disabled = $('ddb_identifier_leiden_plus').disabled;
+      
+      Form.Element.disable('ddb_identifier_leiden_plus');
+      Form.Element.disable('identifier_submit_top');
+      Form.Element.disable('identifier_submit');
+      
+      $('ddb_identifier_leiden_plus').toggleClassName('loading');
+      Form.Element.setValue('ddb_identifier_leiden_plus',
+        $('original_leiden_plus').value);
+  
+      ajax_gitxml2nonxml(was_disabled);
+    }
+    else if (#{(!defined?(Sosol::Application.config.xsugar_standalone_enabled).nil?) && Sosol::Application.config.xsugar_standalone_enabled} && !#{defined?(@bad_leiden) ? @bad_leiden : false}) {
       was_disabled = $('ddb_identifier_leiden_plus').disabled;
       
       Form.Element.disable('ddb_identifier_leiden_plus');
