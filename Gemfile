@@ -18,7 +18,7 @@ end
 gem 'jquery-rails'
 
 gem 'haml', '>= 3.0.25'
-gem 'json-jruby', '>= 1.4.3.1', :require => 'json', :platform => :jruby
+gem 'json-jruby', '>= 1.5.0', :require => 'json', :platform => :jruby
 gem 'json'
 gem 'jruby-openssl', '>= 0.8.8', :platform => :jruby
 gem 'jdbc-sqlite3', '>= 3.6.3.054', :platform => :jruby
@@ -36,6 +36,7 @@ gem 'rubyzip', '>= 0.9.5', :require => 'zip/zip'
 gem 'prototype-rails'
 gem 'dynamic_form'
 gem 'capistrano'
-gem 'puma'
 gem 'delayed_job_active_record'
 gem 'daemons'
+gem 'warbler'
+gem 'puma'
