@@ -2,7 +2,7 @@
 # This preamble is the current preamble for Rails 3 apps; edit as needed.
 source 'http://rubygems.org'
 
-gem 'rails', '4.0.0'
+gem 'rails', '4.0.1'
 
 # Needed for the new asset pipeline
 gem 'sass-rails', '~> 4.0.0'
@@ -29,9 +29,9 @@ gem "factory_girl_rails", ">= 1.2"
 gem 'factory_girl', '>= 2.6.4'
 gem 'airbrake', '>= 3.0.5'
 gem 'grit', '~> 2.4.0'
-gem 'rubyzip', '< 1.0.0', :require => 'zip/zip'
+gem 'rubyzip', '~> 0.9.0', :require => 'zip/zip'
 gem 'prototype-rails'
 gem 'dynamic_form'
-gem 'capistrano'
+gem 'capistrano', '~> 2.15.0'
 gem 'warbler'
 gem 'puma'
