@@ -90,7 +90,7 @@ class Repository
     
       canon = Repository.new
       canon.del_alternates(self)
-      `rm -r "#{path}"`
+      `rm -rf "#{path}"`
     rescue Grit::Git::GitTimeout
       self.class.increase_timeout
       self.destroy
