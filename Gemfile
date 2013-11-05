@@ -23,6 +23,7 @@ gem 'activerecord-jdbc-adapter', '>= 1.3.0', :platform => :jruby
 gem 'activerecord-jdbcsqlite3-adapter', '>= 1.3.0', :platform => :jruby
 gem 'activerecord-jdbcmysql-adapter', '>= 1.3.0', :platform => :jruby
 gem 'rack', '>= 1.1.0'
+gem 'shoulda-context', '>= 1.1.6'
 gem 'shoulda-matchers', '>= 2.0.0'
 gem 'shoulda', '>= 2.11.3'
 gem "factory_girl_rails", ">= 1.2"
