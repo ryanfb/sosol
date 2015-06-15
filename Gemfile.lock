@@ -97,8 +97,6 @@ GEM
     polyglot (0.3.5)
     prototype-rails (3.2.1)
       rails (~> 3.2)
-    puma (2.8.2)
-      rack (>= 1.1, < 2.0)
     puma (2.8.2-java)
       rack (>= 1.1, < 2.0)
     rack (1.4.5)
@@ -191,3 +189,6 @@ DEPENDENCIES
   test_after_commit
   uglifier (>= 1.0.3)
   warbler
+
+BUNDLED WITH
+   1.10.3
