@@ -12,6 +12,9 @@ class Vote < ActiveRecord::Base
   #Ensures vote is tallied for publication.
   def tally
     Rails.logger.debug("tally_votes begin")
+    Rails.logger.debug("self before reload: #{self.inspect}")
+    self.reload
+    Rails.logger.debug("self after reload: #{self.inspect}")
     if self.identifier # && self.identifier.status == "editing"
       #need to tally votes and see if any action will take place
       #should only be voting while the publication is owned by the correct board
@@ -42,9 +45,6 @@ class Vote < ActiveRecord::Base
           end
         rescue ActiveRecord::RecordNotFound => e
           Rails.logger.debug("tally_votes RecordNotFound: #{e.inspect}")
-          Rails.logger.debug("self before reload: #{self.inspect}")
-          self.reload
-          Rails.logger.debug("self after reload: #{self.inspect}")
           sleep 1
           ActiveRecord::Base.clear_active_connections!
           retry unless (tries -= 1).zero?
