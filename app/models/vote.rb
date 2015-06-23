@@ -42,6 +42,9 @@ class Vote < ActiveRecord::Base
           end
         rescue ActiveRecord::RecordNotFound => e
           Rails.logger.debug("tally_votes RecordNotFound: #{e.inspect}")
+          Rails.logger.debug("self before reload: #{self.inspect}")
+          self.reload
+          Rails.logger.debug("self after reload: #{self.inspect}")
           sleep 1
           ActiveRecord::Base.clear_active_connections!
           retry unless (tries -= 1).zero?
