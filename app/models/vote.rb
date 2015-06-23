@@ -32,6 +32,7 @@ class Vote < ActiveRecord::Base
         begin
           ActiveRecord::Base.connection_pool.with_connection do |conn|
             self.publication.with_lock do
+              Rails.logger.info("Got tally_votes lock for publication: #{self.publication.inspect}")
               self.publication.tally_votes()
             end
           end
