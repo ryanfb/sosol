@@ -30,14 +30,20 @@ class Vote < ActiveRecord::Base
 
       #let publication decide how to access votes
       Thread.new do
+        Rails.logger.debug("tally_votes thread start")
         begin
-          Rails.logger.debug("tally_votes thread start")
+          Rails.logger.debug("tally_votes block begin")
           ActiveRecord::Base.connection_pool.with_connection do |conn|
             self.publication.with_lock do
-              Rails.logger.info("Got tally_votes lock for publication: #{self.publication.inspect}")
+              Rails.logger.info("tally_votes got lock for publication: #{self.publication.inspect}")
               self.publication.tally_votes()
             end
           end
+        rescue ActiveRecord::RecordNotFound => e
+          Rails.logger.debug("tally_votes RecordNotFound: #{e.inspect}")
+          sleep 1
+          ActiveRecord::Base.clear_active_connections!
+          retry
         ensure
           # The new thread gets a new AR connection, so we should
           # always close it and flush logs before we terminate
