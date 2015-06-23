@@ -705,6 +705,7 @@ class PublicationsController < ApplicationController
 
     Vote.transaction do
       @publication.lock!
+      Rails.logger.info("Vote.transaction got publication lock")
       #note that votes go to the publication's identifier
       @vote = Vote.new(params[:vote])
       vote_identifier = @vote.identifier.lock!
@@ -730,6 +731,9 @@ class PublicationsController < ApplicationController
         # invalidate their cache since an action may have changed its status
         expire_publication_cache(@publication.creator.id)
         expire_fragment(/board_publications_\d+/)
+      else
+        Rails.logger.info("Vote.transaction: user already voted")
+        raise ActiveRecord::Rollback, "User already voted"
       end
     end
 

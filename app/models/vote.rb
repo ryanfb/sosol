@@ -11,6 +11,7 @@ class Vote < ActiveRecord::Base
 
   #Ensures vote is tallied for publication.
   def tally
+    Rails.logger.debug("tally_votes begin")
     if self.identifier # && self.identifier.status == "editing"
       #need to tally votes and see if any action will take place
       #should only be voting while the publication is owned by the correct board
@@ -30,6 +31,7 @@ class Vote < ActiveRecord::Base
       #let publication decide how to access votes
       Thread.new do
         begin
+          Rails.logger.debug("tally_votes thread start")
           ActiveRecord::Base.connection_pool.with_connection do |conn|
             self.publication.with_lock do
               Rails.logger.info("Got tally_votes lock for publication: #{self.publication.inspect}")
@@ -39,6 +41,7 @@ class Vote < ActiveRecord::Base
         ensure
           # The new thread gets a new AR connection, so we should
           # always close it and flush logs before we terminate
+          Rails.logger.debug("tally_votes thread end")
           ActiveRecord::Base.connection.close
           Rails.logger.flush
         end
