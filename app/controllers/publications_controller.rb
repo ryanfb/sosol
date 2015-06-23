@@ -705,7 +705,7 @@ class PublicationsController < ApplicationController
 
     Vote.transaction do
       @publication.lock!
-      Rails.logger.info("Vote.transaction got publication lock")
+      Rails.logger.info("Vote.transaction got publication lock on #{@publication.inspect}")
       #note that votes go to the publication's identifier
       @vote = Vote.new(params[:vote])
       vote_identifier = @vote.identifier.lock!
@@ -735,6 +735,7 @@ class PublicationsController < ApplicationController
         Rails.logger.info("Vote.transaction: user already voted")
         raise ActiveRecord::Rollback, "User already voted"
       end
+      Rails.logger.info("Vote.transaction done")
     end
 
     begin

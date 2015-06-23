@@ -31,6 +31,7 @@ class Vote < ActiveRecord::Base
       #let publication decide how to access votes
       Thread.new do
         Rails.logger.debug("tally_votes thread start")
+        tries = 3
         begin
           Rails.logger.debug("tally_votes block begin")
           ActiveRecord::Base.connection_pool.with_connection do |conn|
@@ -43,7 +44,7 @@ class Vote < ActiveRecord::Base
           Rails.logger.debug("tally_votes RecordNotFound: #{e.inspect}")
           sleep 1
           ActiveRecord::Base.clear_active_connections!
-          retry
+          retry unless (tries -= 1).zero?
         ensure
           # The new thread gets a new AR connection, so we should
           # always close it and flush logs before we terminate
