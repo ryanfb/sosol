@@ -48,4 +48,6 @@ Sosol::Application.configure do
   config.canonical_repository = File.join(config.repository_root, 'canonical.git')
 
   config.site_identifiers = 'AlignmentCiteIdentifier,APISIdentifier,BiblioIdentifier,CiteIdentifier,CommentaryCiteIdentifier,CTSInventoryIdentifier,CtsOACIdentifier,DDBIdentifier,EpiCTSIdentifier,EpiTransCTSIdentifier,HGVMetaIdentifier,HGVTransIdentifier,OaCiteIdentifier,OACIdentifier,OajCiteIdentifier,TeiCTSIdentifier,TeiTransCTSIdentifier'
+
+  ActiveRecord::Base.logger.level = Logger::INFO
 end
