@@ -15,6 +15,7 @@ class Vote < ActiveRecord::Base
     Rails.logger.debug("self before reload: #{self.inspect}")
     self.reload
     Rails.logger.debug("self after reload: #{self.inspect}")
+    Rails.logger.debug("self.publication: #{self.publication.inspect unless self.publication.nil?}")
     Rails.logger.debug("AR base: #{ActiveRecord::Base.connection.inspect}")
     if self.identifier # && self.identifier.status == "editing"
       #need to tally votes and see if any action will take place
@@ -38,6 +39,7 @@ class Vote < ActiveRecord::Base
         tries = 3
         begin
           Rails.logger.debug("tally_votes block begin")
+          ActiveRecord::Base.connection_pool.clear_reloadable_connections!
           ActiveRecord::Base.connection_pool.with_connection do |conn|
             Rails.logger.debug("connection pool: #{conn.inspect}")
             self.publication.with_lock do
@@ -47,6 +49,11 @@ class Vote < ActiveRecord::Base
           end
         rescue ActiveRecord::RecordNotFound => e
           Rails.logger.debug("tally_votes RecordNotFound: #{e.inspect}")
+          sleep 1
+          ActiveRecord::Base.clear_active_connections!
+          retry unless (tries -= 1).zero?
+        rescue NoMethodError => e
+          Rails.logger.debug("tally_votes NoMethodError: #{e.inspect}")
           sleep 1
           ActiveRecord::Base.clear_active_connections!
           retry unless (tries -= 1).zero?
