@@ -49,5 +49,5 @@ Sosol::Application.configure do
 
   config.site_identifiers = 'AlignmentCiteIdentifier,APISIdentifier,BiblioIdentifier,CiteIdentifier,CommentaryCiteIdentifier,CTSInventoryIdentifier,CtsOACIdentifier,DDBIdentifier,EpiCTSIdentifier,EpiTransCTSIdentifier,HGVMetaIdentifier,HGVTransIdentifier,OaCiteIdentifier,OACIdentifier,OajCiteIdentifier,TeiCTSIdentifier,TeiTransCTSIdentifier'
 
-  ActiveRecord::Base.logger.level = Logger::INFO
+  config.active_record.logger = nil unless config.active_record.nil?
 end
