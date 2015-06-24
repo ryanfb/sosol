@@ -15,6 +15,7 @@ class Vote < ActiveRecord::Base
     Rails.logger.debug("self before reload: #{self.inspect}")
     self.reload
     Rails.logger.debug("self after reload: #{self.inspect}")
+    Rails.logger.debug("AR base: #{ActiveRecord::Base.connection.inspect}")
     if self.identifier # && self.identifier.status == "editing"
       #need to tally votes and see if any action will take place
       #should only be voting while the publication is owned by the correct board
@@ -38,6 +39,7 @@ class Vote < ActiveRecord::Base
         begin
           Rails.logger.debug("tally_votes block begin")
           ActiveRecord::Base.connection_pool.with_connection do |conn|
+            Rails.logger.debug("connection pool: #{conn.inspect}")
             self.publication.with_lock do
               Rails.logger.info("tally_votes got lock for publication: #{self.publication.inspect}")
               self.publication.tally_votes()
