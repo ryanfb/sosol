@@ -1,0 +1,6 @@
+.git
+db/git/canonical.git
+db/test/git/canonical.git
+Dockerfile
+.dockerignore
+log/*.log
