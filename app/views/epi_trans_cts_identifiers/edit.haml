@@ -1,12 +1,13 @@
-#main
-    
+#main  
   = render :partial => 'identifiers/edit_bar'
+  #Cite_Image_Service{:display => 'none;', 'data-content' => @identifier[:cite_image_service]}
+
   .site
     = render :partial => 'identifiers/header'
     #edit  
     
       #editing_trans_text_view
-        = @identifier[:text_html_preview]    
+        = @identifier[:text_html_preview].html_safe
       
         = form_for @identifier, :url => { :action => :updatexml } do |f|
           = f.error_messages

@@ -24,8 +24,8 @@ class PublicationsController < ApplicationController
           #raise id.title + " ... " + id.name + " ... " + id.title.gsub(/\s/,'_')
 
           #simple paths for just this pub
-          zos.put_next_entry( id.class::FRIENDLY_NAME + "-" + id.title.gsub(/\s/,'_') + ".xml")
-
+          zos.put_next_entry( id.download_file_name )
+          
           #full path as used in repo
           #zos.put_next_entry( id.to_path)
 
@@ -222,6 +222,16 @@ class PublicationsController < ApplicationController
       redirect_to @publication
       return
     end
+    
+    #check if we need to signup to a community 
+    if params[:do_community_signup] && params[:community] && params[:community][:id] != "0"
+      @community = Community.find(params[:community][:id].to_s)
+      unless (@community.add_member(@current_user.id))
+         flash[:error] = 'Unable to signup for selected community'
+         redirect_to @publication
+         return
+      end
+    end
 
     #check if we are submitting to a community
     #community_id = params[:community_id]
@@ -289,38 +299,23 @@ class PublicationsController < ApplicationController
   def become_finalizer
     # TODO make sure we don't steal it from someone who is working on it
     @publication = Publication.find(params[:id].to_s)
-    @publication.remove_finalizer
+    original_publication_owner_id = @publication.owner.id
+    @publication.with_lock do
+      @publication.remove_finalizer
 
-    #note this can only be called on a board owned publication
-    if @publication.owner_type != "Board"
-      flash[:error] = "Can't change finalizer on non-board copy of publication."
-      redirect_to show
-    end
-    @publication.status = "finalizing_pending"
-    @publication.save
-
-    # We need to call this before spawning a thread to avoid a busy deadlock with SQLite in the test environment
-    ActiveRecord::Base.clear_active_connections!
-
-    Thread.new do
-      begin
-        ActiveRecord::Base.connection_pool.with_connection do |conn|
-          @publication.send_to_finalizer(@current_user)
-          @publication.status = "finalizing"
-          @publication.save
-        end
-      ensure
-        # The new thread gets a new AR connection, so we should
-        # always close it and flush logs before we terminate
-        ActiveRecord::Base.connection.close
-        Rails.logger.flush
+      #note this can only be called on a board owned publication
+      if @publication.owner_type != "Board"
+        flash[:error] = "Can't change finalizer on non-board copy of publication."
+        redirect_to show
       end
+      @publication.status = "finalizing_pending"
+      @publication.save
+
+      SendToFinalizerJob.new.async.perform(@publication.id, @current_user.id)
     end
 
-    #redirect_to (dashboard_url) #:controller => "publications", :action => "finalize_review" , :id => new_publication_id
     flash[:notice] = "Finalizer change running. Check back in a few minutes."
-    redirect_to :controller => 'user', :action => 'dashboard', :board_id => @publication.owner.id
-
+    redirect_to :controller => 'user', :action => 'dashboard', :board_id => original_publication_owner_id
   end
 
   def finalize_review
@@ -371,8 +366,8 @@ class PublicationsController < ApplicationController
           #find all modified identiers in the publication and run any necessary preprocessing
           @publication.identifiers.each do |id|
             #board controls this id and it has been modified
-            if id.modified? && @publication.find_first_board.controls_identifier?(id)
-              modified = id.preprocess_for_finalization
+            if id.modified? && @publication.find_first_board.controls_identifier?(id) 
+              modified = id.preprocess_for_finalization(@publication.find_first_board.users.collect { |m| m.human_name })
               if (modified)
                 id.save
                 any_preprocessed = true
@@ -384,13 +379,14 @@ class PublicationsController < ApplicationController
           redirect_to @publication
           return
         end # end iteration through identifiers
-        # we need to rerun preprocessing until no more changes are made because a preprocessing step
-        # can modify a related identifier, e.g. as in the case of the citations which are edit artifacts
-        done_preprocessing = ! any_preprocessed
+        # if we have multiple identifiers
+        # we need to rerun preprocessing until no more changes are made 
+        # because a preprocessing step can modify a related identifier, 
+        # e.g. as in the case of the citations which are edit artifacts
+        done_preprocessing = max_loops == 1 ? true : ! any_preprocessed
         if (!done_preprocessing && loop_count == max_loops)
           flash[:error] = "Error preprocessing finalization copy. Max loop iterations exceeded for preprocessing."
-          redirect_to @publication
-          break
+          return redirect_to @publication
         end
       end # done preprocessing
     end # end transaction
@@ -683,24 +679,22 @@ class PublicationsController < ApplicationController
       return
     end
 
+    #fails - publication not in correct ownership
+    if @publication.owner_type != "Board"
+      #we have a problem since no one should be voting on a publication if it is not in theirs
+      flash[:error] = "You do not have permission to vote on this publication which you do not own!"
+      #kind a harsh but send em back to their own dashboard
+      redirect_to dashboard_url
+      return
+    end
+
     Vote.transaction do
+      @publication.lock!
       #note that votes go to the publication's identifier
       @vote = Vote.new(params[:vote])
-      @vote.user_id = @current_user.id
-
       vote_identifier = @vote.identifier.lock!
-      @publication.lock!
-
-      #fails - publication not in correct ownership
-      if @publication.owner_type != "Board"
-        #we have a problem since no one should be voting on a publication if it is not in theirs
-        flash[:error] = "You do not have permission to vote on this publication which you do not own!"
-        #kind a harsh but send em back to their own dashboard
-        redirect_to dashboard_url
-        return
-      else
-        @vote.board_id = @publication.owner_id
-      end
+      @vote.user_id = @current_user.id
+      @vote.board_id = @publication.owner_id
 
       @comment = Comment.new()
       @comment.comment = @vote.choice + " - " + params[:comment][:comment]

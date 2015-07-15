@@ -1,3 +1,8 @@
+XSUGAR_STANDALONE_URL="http://localhost:9999/"
+XSUGAR_STANDALONE_USE_PROXY="true"
+EXIST_STANDALONE_URL="http://localhost:8800"
+DEV_INIT_FILES = []
+
 Sosol::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
@@ -22,10 +27,13 @@ Sosol::Application.configure do
 
   # Only use best-standards-support built into browsers
   config.action_dispatch.best_standards_support = :builtin
-
+  
+  config.xsugar_standalone_url = XSUGAR_STANDALONE_URL
+  config.xsugar_standalone_use_proxy = XSUGAR_STANDALONE_USE_PROXY
+  config.dev_init_files = DEV_INIT_FILES
+  
   # config/environments/development_secret.rb should set
   # RPX_API_KEY and RPX_REALM (site name) for RPX,
   # and possibly other unversioned secrets for development
   require File.join(File.dirname(__FILE__), 'development_secret')
 end
-

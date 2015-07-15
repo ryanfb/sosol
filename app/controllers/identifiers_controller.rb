@@ -1,16 +1,11 @@
 # Superclass of the ddb (Text), hgv_Meta, and hgv_trans controllers
 # - contains methods common to these identifiers
 class IdentifiersController < ApplicationController
-  # def method_missing(method_name, *args)
-  #   identifier = Identifier.find(params[:id].to_s)
-  #   redirect_to :controller => identifier.class.to_s.pluralize.underscore, :action => method_name
-  # end
-  
   # - GET /publications/1/xxx_identifiers/1/editxml
   # - edit the XML file from the repository of the associated identifier
   def editxml
     find_identifier
-    @identifier[:xml_content] = @identifier.xml_content
+    @identifier.xml_content_attr( @identifier.xml_content )
     @is_editor_view = true
     render :template => 'identifiers/editxml'
   end
@@ -102,7 +97,9 @@ class IdentifiersController < ApplicationController
       if %w{new editing}.include?@identifier.publication.status
         flash[:notice] += " Go to the <a href='#{url_for(@identifier.publication)}'>publication overview</a> if you would like to submit."
       end
-      
+      unless (@identifier[:transform_messages].nil? )
+        flash[:notice] = @identifier[:transform_messages].join('<br/>')
+      end
       redirect_to polymorphic_path([@identifier.publication, @identifier],
                                  :action => :editxml) and return
     rescue JRubyXML::ParseError => parse_error

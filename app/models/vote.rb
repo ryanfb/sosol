@@ -24,22 +24,7 @@ class Vote < ActiveRecord::Base
       #decree_action = self.publication.tally_votes(related_votes)
       #self.publication.tally_votes(related_votes)
 
-      # We need to call this before spawning a thread to avoid a busy deadlock with SQLite in the test environment
-      ActiveRecord::Base.clear_active_connections!
-
-      #let publication decide how to access votes
-      Thread.new do
-        begin
-          ActiveRecord::Base.connection_pool.with_connection do |conn|
-            self.publication.tally_votes()
-          end
-        ensure
-          # The new thread gets a new AR connection, so we should
-          # always close it and flush logs before we terminate
-          ActiveRecord::Base.connection.close
-          Rails.logger.flush
-        end
-      end
+      TallyVotesJob.new.async.perform(self.publication.id)
     end
     return nil
   end

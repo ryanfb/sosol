@@ -1,27 +1,13 @@
 require 'test_helper'
-require 'thwait'
 
 class WorkflowTest < ActiveSupport::TestCase
   def generate_board_vote_for_decree(board, decree, identifier, user)
-    Rails.logger.info 'generate_board_vote_for_decree'
-    threads_active_before_vote = Thread.list.select{|t| t.alive?}
-    Rails.logger.info threads_active_before_vote.inspect
-    Rails.logger.flush
     FactoryGirl.create(:vote,
             :publication_id => identifier.publication.id,
             :identifier_id => identifier.id,
             :user => user,
             :choice => (decree.get_choice_array)[rand(
               decree.get_choice_array.size)])
-    threads_active_after_vote = Thread.list.select{|t| t.alive?}
-    new_active_threads = threads_active_after_vote - threads_active_before_vote
-    Rails.logger.info new_active_threads.inspect
-    Rails.logger.info "waiting on threads..."
-    Rails.logger.flush
-    ThreadsWait.all_waits(*new_active_threads) do |t|
-      Rails.logger.info "#{t} ended"
-    end
-    Rails.logger.flush
   end
   
   def generate_board_votes_for_action(board, action, identifier)
@@ -92,6 +78,18 @@ class WorkflowTest < ActiveSupport::TestCase
       
       teardown do
         @publication.destroy
+      end
+
+      context "submitted with no modifications" do
+        setup do
+          @publication.submit
+          @publication.reload
+        end
+
+        should "not change status or be submitted" do
+          assert_equal 0, @publication.children.length
+          assert_equal "new", @publication.status
+        end
       end
       
       context "submitted with only DDB modifications" do

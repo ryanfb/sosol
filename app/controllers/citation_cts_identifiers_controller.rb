@@ -1,9 +1,19 @@
 class CitationCtsIdentifiersController < IdentifiersController
   layout Sosol::Application.config.site_layout
   before_filter :authorize
+  before_filter :ownership_guard, :only => [:update ]
+
   
   def edit
     redirect_to :action =>"editxml",:id=>params[:id]
+  end
+
+  def editxml
+    find_identifier
+    @identifier[:xml_content] = @identifier.xml_content
+    @identifier[:cite_image_service] = Tools::Manager.link_to('image_service',:cite,:binary)[:href] 
+    @is_editor_view = true
+    render :template => 'citation_cts_identifiers/editxml'
   end
   
   ## provide user with choice of editing or annotating a citation 
@@ -20,7 +30,10 @@ class CitationCtsIdentifiersController < IdentifiersController
       return
     end
     
-   
+  def annotate_xslt
+    find_identifier
+    render :xml => @identifier.parentIdentifier.passage_annotate_xslt
+  end
     
     versionIdentifier = params[:version_id].to_s
     sourceCollection = params[:collection].to_s
@@ -53,7 +66,14 @@ class CitationCtsIdentifiersController < IdentifiersController
     elsif matches.length == 0
       pubtype ||= CTS::CTSLib.versionTypeForUrn(sourceCollection,citationUrn)
       #  we don't already have the identifier for this citation so create it
-      @identifier = CitationCTSIdentifier.new_from_template(@publication,sourceCollection,citationUrn, pubtype)
+      begin
+        @identifier = CitationCTSIdentifier.new_from_template(@publication,sourceCollection,citationUrn, pubtype)
+      rescue => e
+        Rails.logger.error(e.backtrace)
+        flash[:error] = "Invalid Citation Scheme"
+        redirect_to dashboard_url
+        return
+      end
     else
       flash[:error] = "One or more conflicting matches for this citation exist. Please delete the <a href='#{url_for(@publication)}'>conflicting publication</a> if you have not submitted it and would like to start from scratch."
       redirect_to dashboard_url
@@ -81,11 +101,15 @@ class CitationCtsIdentifiersController < IdentifiersController
                         :pubtype => params[:pubtype].to_s})
       return
     else
+      urn = params[:urn] + ":" + params[:start_passage].strip
+      if (params[:end_passage] != '')
+        urn = urn + "-" + params[:end_passage].strip
+      end
       redirect_to(:controller => 'cts_publications', 
                 :action => 'create_from_linked_urn',
                 :collection => params[:collection].to_s,
-                :urn => params[:urn] + ":" + params[:start_passage].strip,
-                :src => 'SoSOL')   
+                :urn => urn,
+                :pubtype => params[:pubtype])   
    
     end
   end
@@ -180,8 +204,19 @@ class CitationCtsIdentifiersController < IdentifiersController
     # xslt.xml = REXML::Document.new(@identifier.xml_content)
     # xslt.xsl = REXML::Document.new File.open('start-div-portlet.xsl')
     # xslt.serve()
-
+    @identifier[:cite_image_service] = Tools::Manager.link_to('image_service',:cite,:context)[:href] 
     @identifier[:html_preview] = @identifier.preview
+  end
+  
+  def destroy
+    find_identifier 
+    name = @identifier.title
+    pub = @identifier.publication
+    @identifier.destroy
+    
+    flash[:notice] = name + ' was successfully removed from your publication.'
+    redirect_to pub
+    return
   end
   
   protected

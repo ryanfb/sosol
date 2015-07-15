@@ -11,8 +11,7 @@ class EmailerMailer < ActionMailer::Base
               
     #TODO check that email is creatible, ie has valid addresses
     
-    #from "SoSOL"
-    from Sosol::Application.config.site_name
+    from Sosol::Application.config.site_email_from || Sosol::Application.config.site_name
     sent_on Time.now
   
     subject subject_line

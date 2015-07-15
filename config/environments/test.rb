@@ -1,4 +1,5 @@
 Sosol::Application.configure do
+  puts "Configure test"
   # Settings specified here will take precedence over those in config/application.rb
 
   # The test environment is used exclusively to run your application's
@@ -40,8 +41,12 @@ Sosol::Application.configure do
   config.rpx_realm = 'sosol-test'
   require File.join(File.dirname(__FILE__), 'test_secret')
 
+  config.site_cts_inventories = 'perseids-test|Epi'
+
   # Configure custom application parameters
   config.repository_root = File.join(::Rails.root.to_s, 'db', 'test', 'git')
   config.canonical_canonical_repository = config.canonical_repository
   config.canonical_repository = File.join(config.repository_root, 'canonical.git')
+
+  config.site_identifiers = 'AlignmentCiteIdentifier,APISIdentifier,BiblioIdentifier,CiteIdentifier,CommentaryCiteIdentifier,CTSInventoryIdentifier,CtsOACIdentifier,DDBIdentifier,EpiCTSIdentifier,EpiTransCTSIdentifier,HGVMetaIdentifier,HGVTransIdentifier,OACIdentifier,OajCiteIdentifier,OaCiteIdentifier,TeiCTSIdentifier,TeiTransCTSIdentifier'
 end

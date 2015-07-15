@@ -1,6 +1,8 @@
 class TeiCtsIdentifiersController < IdentifiersController
   layout Sosol::Application.config.site_layout
   before_filter :authorize
+  before_filter :ownership_guard, :only => [:update, :updatexml]
+
   
   ## TODO 
   # we to offer the following options:
@@ -106,6 +108,11 @@ class TeiCtsIdentifiersController < IdentifiersController
     # xslt.serve()
 
     @identifier[:html_preview] = @identifier.preview
+  end
+  
+  def annotate_xslt
+    find_identifier
+    render :xml => @identifier.passage_annotate_xslt
   end
   
   protected

@@ -18,6 +18,7 @@
 
 
 require 'jgit_tree'
+require 'pp'
 
 class Publication < ActiveRecord::Base
 
@@ -110,7 +111,6 @@ class Publication < ActiveRecord::Base
   # * a single string such as: papyri.info/ddbdp/bgu;7;1504
   #publication title is named using first identifier
   def populate_identifiers_from_identifiers(identifiers, original_title = nil)
-
     self.repository.update_master_from_canonical
     # Coming in from an identifier, build up a publication
     if identifiers.class == String
@@ -194,7 +194,12 @@ class Publication < ActiveRecord::Base
   end
 
   after_destroy do |publication|
-    publication.owner.repository.delete_branch(publication.branch)
+    # this is really destructive if it happens to get called on an incompletely
+    # initialized publication which doesn't have a branch defined yet
+    # it deletes all branches in the repo
+    if (publication.branch)
+      publication.owner.repository.delete_branch(publication.branch)
+    end
   end
 
   #Outputs publication information and content to the Rails logger.
@@ -227,7 +232,6 @@ class Publication < ActiveRecord::Base
   #
   #When there are no more identifiers to be submitted, then the publication is marked as committed.
   def submit_to_next_board
-
     #note: all @recent_submit_sha conde here added because it was here before, not sure if this is still needed
     @recent_submit_sha = ''
 
@@ -348,6 +352,10 @@ class Publication < ActiveRecord::Base
 
   #Simply pointer to submit_to_next_board method.
   def submit
+    if identifiers.select { |id| id.modified? }.empty?
+      return 'You must modify at least one part of a publication before submitting it.', nil
+    end
+
     submit_to_next_board
   end
 
@@ -429,11 +437,13 @@ class Publication < ActiveRecord::Base
   #- +status_in+ the status to be set
   def set_origin_identifier_status(status_in)
       #finalizer is a user so they dont have a board, must go up until we find a board
+      #if we created an identifier on the publication during finalization it 
+      # won't have an origin and should be skipped
       board = self.find_first_board
       if board
 
         self.identifiers.each do |i|
-          if board.identifier_classes && board.identifier_classes.include?(i.class.to_s)
+          if board.identifier_classes && board.identifier_classes.include?(i.class.to_s) && i.origin
             i.origin.status = status_in
             i.origin.save
           end
@@ -1457,7 +1467,8 @@ class Publication < ActiveRecord::Base
     has_text = false
     has_biblio = false
     has_cts = false
-
+    has_cite = false
+    
     self.identifiers.each do |i|
       if i.class.to_s == "BiblioIdentifier"
         has_biblio = true
@@ -1470,6 +1481,9 @@ class Publication < ActiveRecord::Base
       end
       if i.class.to_s =~ /CTSIdentifier/
         has_cts = true
+      end
+      if i.class.to_s =~ /CiteIdentifier/
+        has_cite = true
       end
     end
     if !has_text
@@ -1487,8 +1501,8 @@ class Publication < ActiveRecord::Base
     if has_biblio
       creatable_identifiers = []
     end
-    #  BALMAS Creating other records in association with a CTSIdentifier publication will be enabled elsewhere
-    if has_cts
+    #  BALMAS Creating other records in association with  CTSIdentifier or CiteIdentifier publication will be enabled elsewhere
+    if has_cts || has_cite
       creatable_identifiers = []
     end
 

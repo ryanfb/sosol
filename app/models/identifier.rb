@@ -114,7 +114,14 @@ class Identifier < ActiveRecord::Base
   # - *Returns* :
   #   - a String of the SHA1 of the commit
   def set_content(content, options = {})
-    options.reverse_merge! :comment => ''
+    default_actor = nil
+    if((!self.owner.nil?) && (self.owner.class == User))
+      default_actor = self.owner.jgit_actor
+    end
+      
+    options.reverse_merge!(
+      :comment => '',
+      :actor    => default_actor)
     commit_sha = self.repository.commit_content(self.to_path,
                                    self.branch,
                                    content,
@@ -324,7 +331,11 @@ class Identifier < ActiveRecord::Base
     return false
 
   end
-
+  
+  def xml_content_attr( _xml )
+    self[:xml_content] = _xml
+  end
+  
   # - *Returns* :
   #   - the content of the associated identifier's XML file
   def xml_content
@@ -349,10 +360,23 @@ class Identifier < ActiveRecord::Base
 
     content = before_commit(content)
     commit_sha = ""
+    # TODO - this logic seems wrong -- shouldn't it just
+    # be if !options[:validate] || is_valid_xml?(content) 
     if options[:validate] && is_valid_xml?(content)
       commit_sha = self.set_content(content, options)
     end
 
+    # this is a little bit of a hack -- if the before_commit
+    # call stores a postcommit version of the content then we
+    # do a 2nd commit so that we have a full history of the changes
+    # in the commit history
+    if self[:postcommit]  
+      if (! options[:validate] || is_valid_xml?(self[:postcommit]))
+        options[:comment] = self[:transform_messages].join(' ')
+        commit_sha = self.set_content(self[:postcommit], options)
+      end
+    end
+    
     return commit_sha
   end
 
@@ -466,8 +490,13 @@ class Identifier < ActiveRecord::Base
     change_desc_content = self.xml_content
 
     # assume context is from finalizing publication, so parent is board's copy
-    parent_classes = self.parent.owner.identifier_classes
-
+    if self.parent
+      parent_classes = self.parent.owner.identifier_classes
+    else
+      # if we created upon finalization we won't have a parent...
+      parent_classes = []
+    end  
+    
     Comment.find_all_by_publication_id(self.publication.origin.id).each do |c|
       if(parent_classes.include?(c.identifier.class.to_s))
         change_desc_content = add_change_desc( "#{c.reason.capitalize} - " + c.comment, c.user, change_desc_content, c.created_at.localtime.xmlschema )
@@ -524,10 +553,13 @@ class Identifier < ActiveRecord::Base
     #no vote found
     return false
   end
-
-  ## identifier classes which need further automatic processing after approval but before
-  ## finalization should override this method -- the default does nothing
-  def preprocess_for_finalization
+  
+  ## identifier classes which need further automatic processing after 
+  ## approval but before finalization should override this method -- 
+  ## the default does nothing
+  ## @param reviewed_by set to a list of author strings for the board
+  ##        members of the finalizing board
+  def preprocess_for_finalization(reviewed_by)
     # default does nothing
     return false
   end
@@ -541,6 +573,23 @@ class Identifier < ActiveRecord::Base
   ## get a link to the catalog for this identifier
   def get_catalog_link
     NumbersRDF::NumbersHelper.identifier_to_url(self.name)
+  end
+  
+  ## create a default title for an identifier
+  ## @param a_from is up to the controller
+  def self.create_title(a_from)
+    ## default is a no-op
+  end
+
+  # find files matching this one metting the supplied conditions
+  # @conditions matching params
+  def matching_files(a_conditions)
+    # default is a no-op
+  end
+
+  def download_file_name
+   # default 
+   self.class::FRIENDLY_NAME + "-" + self.title.gsub(/\s/,'_') + ".xml"
   end
 
 end

@@ -1,6 +1,5 @@
 #main
   = render :partial => 'identifiers/edit_bar'
-
   .site
     = render :partial => 'identifiers/header'
     #edit
@@ -10,4 +9,4 @@
         
         %label Preview
         .PContent
-          = @identifier[:html_preview]
+          = @identifier[:html_preview].html_safe

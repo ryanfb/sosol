@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20110811204557) do
+ActiveRecord::Schema.define(:version => 20150605150300) do
 
   create_table "boards", :force => true do |t|
     t.string   "title"
@@ -52,11 +52,12 @@ ActiveRecord::Schema.define(:version => 20110811204557) do
     t.integer  "members"
     t.integer  "admins"
     t.string   "description"
-    t.datetime "created_at",     :null => false
-    t.datetime "updated_at",     :null => false
+    t.datetime "created_at",                            :null => false
+    t.datetime "updated_at",                            :null => false
     t.integer  "board_id"
     t.integer  "publication_id"
     t.integer  "end_user_id"
+    t.boolean  "allows_self_signup", :default => false
   end
 
   create_table "communities_admins", :id => false, :force => true do |t|
@@ -99,7 +100,7 @@ ActiveRecord::Schema.define(:version => 20110811204557) do
   end
 
   add_index "docos", ["docotype"], :name => "index_docos_on_docotype"
-  add_index "docos", ["docotype"], :name => "index_docos_on_id_and_docotype"
+  add_index "docos", ["id", "docotype"], :name => "index_docos_on_id_and_docotype"
 
   create_table "emailers", :force => true do |t|
     t.integer  "board_id"
@@ -182,6 +183,7 @@ ActiveRecord::Schema.define(:version => 20110811204557) do
     t.string   "full_name"
     t.boolean  "is_community_master_admin", :default => false
     t.boolean  "is_master_admin",           :default => false
+    t.integer  "accepted_terms",            :default => 0
   end
 
   create_table "votes", :force => true do |t|
