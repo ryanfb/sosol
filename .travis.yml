@@ -1,13 +1,13 @@
 language: ruby
 sudo: false
 env:
-  - JRUBY_OPTS="-J-Xmx1g --2.0"
+  - JRUBY_OPTS="-J-Xmx1g"
 jdk:
   - oraclejdk7
   - oraclejdk8
   - openjdk7
 rvm:
-  - jruby-1.7.26
+  - jruby-9.1.9.0
 before_install:
   - gem install bundler
   - gem update bundler
