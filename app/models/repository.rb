@@ -101,9 +101,9 @@ class Repository
   end
 
   def repack
-    `#{self.git_command_prefix} repack`
+    Rails.logger.info(`#{self.git_command_prefix} repack 2>&1`)
     unless $?.success?
-      Rails.logger.warn("Canonical repack failed")
+      Rails.logger.error("Canonical repack failed")
     end
   end
 
