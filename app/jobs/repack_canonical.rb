@@ -1,4 +1,4 @@
-class RepackCanonical
+class RepackCanonicalJob
   include SuckerPunch::Job
 
   def perform
