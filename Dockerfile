@@ -5,21 +5,18 @@ MAINTAINER Ryan Baumann <ryan.baumann@gmail.com>
 # The Duke mirror is just added here as backup for occasional main flakiness.
 RUN echo deb http://archive.linux.duke.edu/ubuntu/ trusty main >> /etc/apt/sources.list 
 RUN echo deb-src http://archive.linux.duke.edu/ubuntu/ trusty main >> /etc/apt/sources.list
-RUN apt-get update
-
 # Install Ruby, RubyGems, Bundler, MySQL, Git, wget, svn, java
-RUN apt-get install -y mysql-server git wget subversion
 # openjdk-7-jre
 # Install ruby-build build deps
-RUN apt-get install -y autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm3 libgdbm-dev
-
 # Install oraclejdk8
-RUN apt-get install -y software-properties-common python-software-properties
-RUN add-apt-repository -y ppa:webupd8team/java
-RUN apt-get update
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
-RUN apt-get install -y oracle-java8-installer
-RUN apt-get install -y oracle-java8-set-default
+RUN apt-get update && \
+  apt-get install -y software-properties-common python-software-properties && \
+  add-apt-repository -y ppa:webupd8team/java && \
+  apt-get update && \
+  apt-get install -y mysql-server git wget subversion \
+  autoconf bison build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm3 libgdbm-dev \
+  oracle-java8-installer oracle-java8-set-default
 
 # Set the locale.
 RUN locale-gen en_US.UTF-8
@@ -47,12 +44,14 @@ RUN cd ruby-build; ./install.sh
 # ADD production_secret.rb /root/sosol/config/environments/production_secret.rb
 
 ADD . /root/sosol/
-
+WORKDIR /root/sosol
 # Configure MySQL
 RUN java -version
+RUN rbenv install
+RUN rbenv rehash
 RUN jruby -v
 ENV RAILS_ENV test
-RUN cd /root/sosol; ./script/setup
+RUN ./script/setup
 
 # Finally, start the application
 # EXPOSE 3000
