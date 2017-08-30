@@ -53,6 +53,56 @@ FactoryGirl.define do
     f.identifier_classes ['APISIdentifier']
   end
 
+  factory :dclp_board, :parent => :board do |f|
+    f.decrees { |decrees|
+      [
+        decrees.association(
+          :count_decree,
+          :trigger => 1.0,
+          :board => nil,
+          :action => "reject",
+          :choices => "Return-Straight-to-Sender"
+        ),
+        decrees.association(
+          :count_decree,
+          :trigger => 1.0,
+          :board => nil,
+          :action => "approve",
+          :choices => "Accept-Straight-to-Finalization"
+        ),
+        decrees.association(
+          :count_decree,
+          :trigger => 2.0,
+          :board => nil,
+          :action => "reject",
+          :choices => "ReturnToSender"
+        ),
+        decrees.association(
+          :count_decree,
+          :trigger => 2.0,
+          :board => nil,
+          :action => "approve",
+          :choices => "Accept-Text-Meta"
+        ),
+        decrees.association(
+          :count_decree,
+          :trigger => 1.0,
+          :board => nil,
+          :action => "graffiti",
+          :choices => "IgnoreTrash"
+        ),
+        decrees.association(
+          :percent_decree,
+          :trigger => 110.0,
+          :board => nil,
+          :action => "reject",
+          :choices => "Defer"
+        )
+      ]
+    }
+    f.identifier_classes ['DCLPMetaIdentifier','DCLPTextIdentifier']
+  end
+
   factory :hgv_board, :parent => :board do |f|
     f.decrees { |decrees|
       [
