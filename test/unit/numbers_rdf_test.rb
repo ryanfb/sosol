@@ -15,4 +15,10 @@ class NumbersRDFTest < ActiveSupport::TestCase
     #   end
     # end
   end
+
+  should "give the correct identifier hash for identifier strings" do
+    assert_equal({"ddbdp" => ["papyri.info/ddbdp/bgu;1;1"]}, NumbersRDF::NumbersHelper.identifiers_to_hash(['papyri.info/ddbdp/bgu;1;1']))
+    assert_equal({"hgv" => ["papyri.info/hgv/1"]}, NumbersRDF::NumbersHelper.identifiers_to_hash(['papyri.info/hgv/1']))
+    assert_equal({"dclp" => ["papyri.info/dclp/1"]}, NumbersRDF::NumbersHelper.identifiers_to_hash(['papyri.info/dclp/1']))
+  end
 end
