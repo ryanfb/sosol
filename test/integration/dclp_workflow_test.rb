@@ -90,7 +90,7 @@ class DclpWorkflowTest < ActionController::IntegrationTest
     context "workflow testing" do
       setup do
         Rails.logger.level = 0
-        Rails.logger.debug "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx sosol testing setup xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        Rails.logger.debug "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx dclp testing setup xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         #a user to put on the boards
         @board_user = FactoryGirl.create(:user, :name => "board_man_bob")
         @board_user_2 = FactoryGirl.create(:user, :name => "board_man_alice")
@@ -164,12 +164,13 @@ class DclpWorkflowTest < ActionController::IntegrationTest
         end
       end
 
-      should "user creates and submits publication to sosol"  do
-        Rails.logger.debug "BEGIN TEST: user creates and submits publication to sosol"
+      should "user creates and submits publication to dclp"  do
+        Rails.logger.debug "BEGIN TEST: user creates and submits publication to dclp"
 
         assert_not_equal nil, @meta_board, "Meta board not created"
         assert_not_equal nil, @text_board, "Text board not created"
         assert_not_equal nil, @translation_board, "Translation board not created"
+        assert_not_equal nil, @dclp_board, "DCLP board not created"
 
         #create a publication with a session
         open_session do |publication_session|
@@ -513,8 +514,24 @@ class DclpWorkflowTest < ActionController::IntegrationTest
       end
 
       teardown do
-        # @publication.reload
-        # @publication.destroy
+        @publication.reload
+        @publication.destroy
+      end
+
+      context "with DDbDP, HGV, and DCLP identifiers" do
+        setup do
+          @publication.populate_identifiers_from_identifiers(
+            [
+              'papyri.info/ddbdp/bgu;6;1470',
+              'papyri.info/hgv/61247',
+              'papyri.info/dclp/61247'
+            ]
+          )
+        end
+
+        should "have the correct identifiers" do
+          assert_equal 4, @publication.identifiers.length
+        end
       end
 
       context "submitted with only DDB modifications" do
