@@ -1,3 +1,6 @@
+dist:
+  - trusty
+  - precise
 language: ruby
 sudo: false
 env:
@@ -8,6 +11,14 @@ jdk:
   - openjdk7
 rvm:
   - jruby-1.7.26
+matrix:
+  exclude:
+    - dist: trusty
+      jdk: oraclejdk7
+    - dist: precise
+      jdk: oraclejdk8
+    - dist: precise
+      jdk: openjdk7
 before_install:
   - command -v bundle >/dev/null 2>&1 || gem install bundler
 before_script:
