@@ -531,6 +531,8 @@ class DclpWorkflowTest < ActionController::IntegrationTest
 
         should "have the correct identifiers" do
           assert_equal 4, @publication.identifiers.length
+          assert_equal %w{DDBIdentifier HGVMetaIdentifier DCLPMetaIdentifier DCLPTextIdentifier}.sort,
+            @publication.identifiers.map{|i| i.class.to_s}.sort
         end
       end
 
