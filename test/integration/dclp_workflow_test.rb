@@ -534,6 +534,25 @@ class DclpWorkflowTest < ActionController::IntegrationTest
           assert_equal %w{DDBIdentifier HGVMetaIdentifier DCLPMetaIdentifier DCLPTextIdentifier}.sort,
             @publication.identifiers.map{|i| i.class.to_s}.sort
         end
+
+        context "submitted with only DCLP modifications" do
+          setup do
+            dclp_text_identifier = @publication.identifiers.select{|i| i.class == DCLPTextIdentifier}.first
+            dclp_text_content = dclp_text_identifier.xml_content
+            assert_equal String, dclp_text_content.class
+            assert (!dclp_text_content.empty?), "DCLP Text content should not be empty"
+            dclp_text_content_with_change = dclp_text_identifier.add_change_desc("test change")
+            assert (dclp_text_content_with_change.length > dclp_text_content.length), "DCLP Text content should be longer with an added change desc"
+            dclp_text_identifier.set_xml_content(dclp_text_content_with_change, :comment => "Add test change")
+
+            @publication.reload
+            @publication.submit
+          end
+
+          should "be submitted" do
+            assert_equal 'submitted', @publication.status
+          end
+        end
       end
 
       context "submitted with only DDB modifications" do
