@@ -558,6 +558,18 @@ class DclpWorkflowTest < ActionController::IntegrationTest
             assert_equal @publication.children, @dclp_board.publications
             assert_equal @dclp_board, @publication.children.first.owner
           end
+
+          context "voted 'approve'" do
+            setup do
+              @new_dclp_submitted = @dclp_board.publications.first.identifiers.first
+              @new_dclp_submitted_id = @new_dclp_submitted.id
+              generate_board_votes_for_action(@dclp_board, "approve", @new_dclp_submitted)
+            end
+
+            should "have votes" do
+              assert (@new_dclp_submitted.votes.length > 0), "Submitted DCLP publication should have votes"
+            end
+          end
         end
       end
 
