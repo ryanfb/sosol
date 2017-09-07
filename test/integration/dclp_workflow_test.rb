@@ -552,6 +552,12 @@ class DclpWorkflowTest < ActionController::IntegrationTest
           should "be submitted" do
             assert_equal 'submitted', @publication.status
           end
+
+          should "be copied to the DCLP board" do
+            assert_equal @publication, @dclp_board.publications.first.parent
+            assert_equal @publication.children, @dclp_board.publications
+            assert_equal @dclp_board, @publication.children.first.owner
+          end
         end
       end
 
