@@ -569,6 +569,13 @@ class DclpWorkflowTest < ActionController::IntegrationTest
             should "have votes" do
               assert (@new_dclp_submitted.votes.length > 0), "Submitted DCLP publication should have votes"
             end
+
+            should "be copied to a finalizer" do
+              assert_equal 1, @dclp_board.publications.first.children.length
+              finalizing_publication =  @dclp_board.publications.first.children.first
+              assert_equal "finalizing", finalizing_publication.status
+              assert_equal User, finalizing_publication.owner.class
+            end
           end
         end
       end
