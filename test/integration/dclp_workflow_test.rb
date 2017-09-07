@@ -493,6 +493,9 @@ class DclpWorkflowTest < ActionController::IntegrationTest
       @hgv_meta_board.users << @james
       @hgv_trans_board.users << @james
       @dclp_board.users << @james
+      3.times do |i|
+        @dclp_board.users << FactoryGirl.create(:user)
+      end
 
       @submitter = FactoryGirl.create(:user, :name => "Submitter")
     end
@@ -575,6 +578,26 @@ class DclpWorkflowTest < ActionController::IntegrationTest
               finalizing_publication =  @dclp_board.publications.first.children.first
               assert_equal "finalizing", finalizing_publication.status
               assert_equal User, finalizing_publication.owner.class
+            end
+
+            should "be copyable to another finalizer" do
+              assert_equal 1, @dclp_board.publications.first.children.length, 'DCLP publication should have one child'
+              finalizing_publication = @dclp_board.publications.first.children.first
+              original_finalizer = finalizing_publication.owner
+              assert_equal "finalizing", finalizing_publication.status
+              assert_equal User, original_finalizer.class
+              different_finalizer = (@dclp_board.users - [original_finalizer]).first
+              assert_not_equal original_finalizer, different_finalizer
+
+              Rails.logger.info("MMF on pub: #{@dclp_board.publications.first.inspect}")
+              open_session do |make_me_finalizer_session|
+                make_me_finalizer_session.post 'publications/' + @dclp_board.publications.first.id.to_s + '/become_finalizer?test_user_id=' + different_finalizer.id.to_s
+              end
+
+              mmf_finalizing_publication = @dclp_board.publications.first.children.first
+              current_finalizer = mmf_finalizing_publication.owner
+              assert_not_equal original_finalizer, current_finalizer, 'Current finalizer should not be the same as the original finalizer'
+              assert_equal 1, @dclp_board.publications.first.children.length, 'DCLP publication should only have one child after finalizer copy'
             end
           end
         end
