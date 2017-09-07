@@ -589,6 +589,10 @@ class SosolWorkflowTest < ActionController::IntegrationTest
                 ActiveRecord::Base.connection_pool.with_connection do |conn|
                   open_session do |make_me_finalizer_session|
                     begin
+                      assert (@ddb_board.publications.length > 0), 'DDB should still have publications'
+                      assert_not_nil @ddb_board.publications.first, 'DDB publication should not be nil'
+                      assert_not_nil @ddb_board.publications.first.owner, 'DDB publication owner should not be nil'
+                      assert_not_nil mmf_publication_id, 'MMF publication id should not be nil'
                       make_me_finalizer_session.post 'publications/' + mmf_publication_id + '/become_finalizer?test_user_id=' + different_finalizer
                     rescue ActiveRecord::RecordNotFound, ActiveRecord::StatementInvalid => e
                       Rails.logger.info("#{e.class} inside MMF thread 1")
