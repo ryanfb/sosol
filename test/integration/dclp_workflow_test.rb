@@ -600,6 +600,18 @@ class DclpWorkflowTest < ActionController::IntegrationTest
               assert_equal 1, @dclp_board.publications.first.children.length, 'DCLP publication should only have one child after finalizer copy'
             end
           end
+
+          context "voted 'reject'" do
+            setup do
+              @new_dclp_submitted = @dclp_board.publications.first.identifiers.first
+              generate_board_votes_for_action(@dclp_board, "reject", @new_dclp_submitted)
+            end
+
+            should "be deleted from editorial board" do
+              assert !Publication.exists?(@new_dclp_submitted_id)
+            end
+          end # reject
+
         end
       end
 
