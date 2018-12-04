@@ -1,0 +1,6 @@
+test:
+  adapter: jdbcmysql
+  database: sosol_test
+  username: travis
+  encoding: utf8
+
