@@ -3,7 +3,7 @@ class FixVotesUserIdToInteger < ActiveRecord::Migration
     begin
       change_column :votes, :user_id, :integer
     rescue
-      change_column :votes, :user_id, 'integer USING CAST(user_id AS integer)'
+      change_column :votes, :user_id, 'integer USING user_id::integer'
     end
   end
 
