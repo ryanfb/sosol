@@ -6,6 +6,7 @@ env:
   matrix:
     - DB=sqlite
     - DB=mysql
+    - DB=postgresql
 jdk:
   - oraclejdk8
   - openjdk7
@@ -15,6 +16,7 @@ before_install:
   - gem install bundler
   - gem update bundler
   - mysql -e 'CREATE DATABASE sosol_test;'
+  - psql -c 'create database sosol_test;' -U postgres
 before_script:
   - gem pristine executable-hooks
   - gem pristine gem-wrappers

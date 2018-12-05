@@ -27,6 +27,7 @@ gem 'jdbc-sqlite3', '>= 3.6.3.054', :platform => :jruby
 gem 'activerecord-jdbc-adapter', '>= 0.9.2', :platform => :jruby
 gem 'activerecord-jdbcsqlite3-adapter', '>= 0.9.2', :platform => :jruby
 gem 'activerecord-jdbcmysql-adapter', '>= 0.9.2', :platform => :jruby
+gem 'activerecord-jdbcpostgresql-adapter', '>= 0.9.2', :platform => :jruby
 gem 'rack', '>= 1.1.0'
 gem 'shoulda-matchers', '>= 2.0.0'
 gem 'shoulda', '>= 2.11.3'
