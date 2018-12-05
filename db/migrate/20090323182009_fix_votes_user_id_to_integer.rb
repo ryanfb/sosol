@@ -1,6 +1,10 @@
 class FixVotesUserIdToInteger < ActiveRecord::Migration
   def self.up
-    change_column :votes, :user_id, 'integer USING (user_id::integer)'
+    if ActiveRecord::Base.connection.adapter_name.downcase.include? 'postgresql'
+      change_column :votes, :user_id, 'integer USING (user_id::integer)'
+    else
+      change_column :votes, :user_id, :integer
+    end
   end
 
   def self.down
