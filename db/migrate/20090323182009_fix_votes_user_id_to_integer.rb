@@ -1,10 +1,6 @@
 class FixVotesUserIdToInteger < ActiveRecord::Migration
   def self.up
-    begin
-      change_column :votes, :user_id, :integer
-    rescue
-      change_column :votes, :user_id, 'integer USING user_id::integer'
-    end
+    change_column :votes, :user_id, 'integer USING (user_id::integer)'
   end
 
   def self.down
