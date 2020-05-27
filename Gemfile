@@ -50,3 +50,5 @@ gem 'rack-attack', '~> 4.0'
 
 gem 'test_after_commit', '= 0.4.1', :group => :test
 gem 'test-unit-rails', '= 1.0.4', :group => :test
+
+gem "jruby-openssl", "~> 0.10.4"
