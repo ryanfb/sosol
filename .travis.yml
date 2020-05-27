@@ -26,9 +26,6 @@ jobs:
       jdk: openjdk13
     - os: linux
       dist: trusty
-      jdk: openjdk14
-    - os: linux
-      dist: trusty
       jdk: oraclejdk8
     - os: linux
       dist: trusty
@@ -37,6 +34,15 @@ jobs:
       dist: trusty
       jdk: oraclejdk11
     - os: linux
+      dist: trusty
+      jdk: oraclejdk12
+    - os: linux
+      dist: trusty
+      jdk: oraclejdk13
+    - os: linux
+      dist: trusty
+      jdk: oraclejdk14
+    - os: linux
       dist: xenial
       jdk: openjdk8
     - os: linux
@@ -56,7 +62,16 @@ jobs:
       jdk: openjdk13
     - os: linux
       dist: xenial
-      jdk: openjdk14
+      jdk: oraclejdk9
+    - os: linux
+      dist: xenial
+      jdk: oraclejdk11
+    - os: linux
+      dist: xenial
+      jdk: oraclejdk12
+    - os: linux
+      dist: xenial
+      jdk: oraclejdk13
     - os: linux
       dist: bionic
       jdk: openjdk8
@@ -77,13 +92,23 @@ jobs:
       jdk: openjdk13
     - os: linux
       dist: bionic
-      jdk: openjdk14
+      jdk: oraclejdk9
+    - os: linux
+      dist: bionic
+      jdk: oraclejdk11
+    - os: linux
+      dist: bionic
+      jdk: oraclejdk12
+    - os: linux
+      dist: bionic
+      jdk: oraclejdk13
 rvm:
   - jruby-1.7.26
 before_install:
   - gem install jruby-openssl
   - gem install bundler --version '<2.0'
 before_script:
+  - git --version
   - gem --version
   - gem pristine executable-hooks
   - gem pristine gem-wrappers
