@@ -81,6 +81,7 @@ jobs:
 rvm:
   - jruby-9.1.17.0
 before_install:
+  - gem install jruby-openssl
   - gem install bundler --version '<2.0'
 before_script:
   - gem --version
