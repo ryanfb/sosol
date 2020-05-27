@@ -1,10 +1,6 @@
 language: ruby
 cache: bundler
 os: linux
-dist:
-  - trusty
-  - xenial
-  - bionic
 sudo: false
 env:
   global:
