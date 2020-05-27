@@ -32,9 +32,6 @@ jobs:
       jdk: oraclejdk9
     - os: linux
       dist: trusty
-      jdk: oraclejdk10
-    - os: linux
-      dist: trusty
       jdk: oraclejdk11
     - os: linux
       dist: trusty
@@ -65,13 +62,7 @@ jobs:
       jdk: openjdk13
     - os: linux
       dist: xenial
-      jdk: oraclejdk8
-    - os: linux
-      dist: xenial
       jdk: oraclejdk9
-    - os: linux
-      dist: xenial
-      jdk: oraclejdk10
     - os: linux
       dist: xenial
       jdk: oraclejdk11
@@ -81,9 +72,6 @@ jobs:
     - os: linux
       dist: xenial
       jdk: oraclejdk13
-    - os: linux
-      dist: xenial
-      jdk: oraclejdk14
     - os: linux
       dist: bionic
       jdk: openjdk8
@@ -104,13 +92,7 @@ jobs:
       jdk: openjdk13
     - os: linux
       dist: bionic
-      jdk: oraclejdk8
-    - os: linux
-      dist: bionic
       jdk: oraclejdk9
-    - os: linux
-      dist: bionic
-      jdk: oraclejdk10
     - os: linux
       dist: bionic
       jdk: oraclejdk11
@@ -120,9 +102,6 @@ jobs:
     - os: linux
       dist: bionic
       jdk: oraclejdk13
-    - os: linux
-      dist: bionic
-      jdk: oraclejdk14
 rvm:
   - jruby-9.1.17.0
 before_install:
