@@ -1,41 +1,40 @@
 language: ruby
 cache: bundler
-os: linux
 sudo: false
 env:
   global:
     - JRUBY_OPTS="-J-Xmx1g --2.0"
-jdk:
-  - oraclejdk8
-  - oraclejdk9
-  - oraclejdk11
-  - openjdk8
-  - openjdk10
-  - openjdk11
 jobs:
   include:
     - os: linux
       dist: trusty
+      jdk: openjdk8
+    - os: linux
+      dist: trusty
+      jdk: oraclejdk8
+    - os: linux
+      dist: trusty
+      jdk: oraclejdk9
+    - os: linux
+      dist: trusty
+      jdk: oraclejdk11
     - os: linux
       dist: xenial
+      jdk: openjdk8
+    - os: linux
+      dist: xenial
+      jdk: openjdk10
+    - os: linux
+      dist: xenial
+      jdk: openjdk11
     - os: linux
       dist: bionic
-  exclude:
-    - dist: xenial
-      jdk: oraclejdk8
-    - dist: xenial
-      jdk: oraclejdk9
-    - dist: xenial
-      jdk: oraclejdk11
-    - dist: bionic
-      jdk: oraclejdk8
-    - dist: bionic
-      jdk: oraclejdk9
-    - dist: bionic
-      jdk: oraclejdk11
-    - dist: trusty
+      jdk: openjdk8
+    - os: linux
+      dist: bionic
       jdk: openjdk10
-    - dist: trusty
+    - os: linux
+      dist: bionic
       jdk: openjdk11
 rvm:
   - jruby-1.7.26
