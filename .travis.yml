@@ -1,5 +1,6 @@
 language: ruby
 cache: bundler
+os: linux
 dist:
   - trusty
   - xenial
@@ -16,6 +17,13 @@ jdk:
   - openjdk10
   - openjdk11
 jobs:
+  include:
+    - os: linux
+      dist: trusty
+    - os: linux
+      dist: xenial
+    - os: linux
+      dist: bionic
   exclude:
     - dist: xenial
       jdk: oraclejdk8
