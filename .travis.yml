@@ -1,6 +1,9 @@
 language: ruby
 cache: bundler
-dist: trusty
+dist:
+  - trusty
+  - xenial
+  - bionic
 sudo: false
 env:
   global:
@@ -10,6 +13,26 @@ jdk:
   - oraclejdk9
   - oraclejdk11
   - openjdk8
+  - openjdk10
+  - openjdk11
+jobs:
+  exclude:
+    - dist: xenial
+      jdk: oraclejdk8
+    - dist: xenial
+      jdk: oraclejdk9
+    - dist: xenial
+      jdk: oraclejdk11
+    - dist: bionic
+      jdk: oraclejdk8
+    - dist: bionic
+      jdk: oraclejdk9
+    - dist: bionic
+      jdk: oraclejdk11
+    - dist: trusty
+      jdk: openjdk10
+    - dist: trusty
+      jdk: openjdk11
 rvm:
   - jruby-1.7.26
 before_install:
